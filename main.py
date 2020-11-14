@@ -7,7 +7,7 @@ import requests
 # Get logs
 class GremlinAttacks(object):
     def __init__(self):
-        self.SERVICES = ["ccgf-search"]
+        self.SERVICES = ["ccgf-model"]
         self.ATTACKS = ["DEPLOYMENT", "POD"]
         self.SECONDS = random.randint(60,240)
         self.PERCENTAGE = random.randint(90,100)
@@ -61,6 +61,7 @@ class GremlinAttacks(object):
             },
             "command": {}
         }
+
 
     def addTime(self):
         time.sleep(100)
@@ -391,7 +392,8 @@ class GremlinAttacks(object):
                 "commandType": "CPU",
                 "args": ["-l", f"{self.SECONDS}", "-p", f"{self.PERCENTAGE}", "-a"]
             }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
@@ -403,7 +405,7 @@ class GremlinAttacks(object):
             "commandType": "Memory",
             "args": ["-l", f"{self.SECONDS}", "-g", f"{gb}"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
@@ -414,7 +416,7 @@ class GremlinAttacks(object):
             "commandType": "Disk",
             "args": ["-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-b", "4", "-p", f"{self.PERCENTAGE}"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
@@ -425,7 +427,7 @@ class GremlinAttacks(object):
             "commandType": "IO",
             "args": ["-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-m", "rw", "-s", "4", "-c", "1"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
@@ -436,7 +438,7 @@ class GremlinAttacks(object):
             "commandType": "Process Killer",
             "args": ["-l", f"{self.SECONDS}", "-i", "0", "-p", f"{pod_name}"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
@@ -447,57 +449,57 @@ class GremlinAttacks(object):
             "commandType": "Shutdown",
             "args": ["-d", "0", "-r"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
     def blackHoleKillAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
-        self.HOSTS_PAYLOAD["command"]["providers"] = []
+        self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "blackhole",
             "commandType": "Blackhole",
             "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
     def latencyKillAttackOnContainers(self, pod_name):
         milli_seconds = random.randint(500, 1000)
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
-        self.HOSTS_PAYLOAD["command"]["providers"] = []
+        self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "latency",
             "commandType": "Latency",
             "args": ["-l", f"{self.SECONDS}", "-m", f"{milli_seconds}", "-h", "^api.gremlin.com", "-p", "^53"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
     def dnsKillAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
-        self.HOSTS_PAYLOAD["command"]["providers"] = []
+        self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "dns",
             "commandType": "DNS",
             "args": ["-l", f"{self.SECONDS}"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
     def packetLossKillAttackOnContainers(self, pod_name):
         percentage_of_packets_to_drop = random.randint(50, 70)
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
-        self.HOSTS_PAYLOAD["command"]["providers"] = []
+        self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "packet_loss",
             "commandType": "Packet Loss",
             "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r", f"{percentage_of_packets_to_drop}"]
         }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
+        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
