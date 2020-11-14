@@ -37,7 +37,7 @@ gremlin.cpuAttack()
 cpu percentage (1-100)
 duration of attack in seconds
 ```
-### Output param:
+### Output:
 
 ```bash
 response-id
@@ -55,7 +55,7 @@ gremlin.memoryAttack()
 memory in GB
 duration of attack in seconds
 ```
-### Output param:
+### Output:
 
 ```bash
 response-id
