@@ -5,9 +5,8 @@ pipeline {
             stage('Run Attacks') {
                 steps {
                     script {
-                        sh 'pip install --upgrade pip --user'
-                        sh 'pip install -r requiremets.txt --user'
-                        sh 'python main.py'
+                        sh 'source venv/bin/activate'
+                        sh 'python3 main.py'
                     }
                 }
             }
