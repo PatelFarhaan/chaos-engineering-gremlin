@@ -5,6 +5,7 @@ import requests
 
 
 # Get logs and store to S3: Folder name would be current day and content would be all attacks in 3 folders
+# Send notification of attacks to ramarao and me via aws sns
 
 class GremlinAttacks(object):
     def __init__(self):
@@ -62,6 +63,10 @@ class GremlinAttacks(object):
             },
             "command": {}
         }
+
+
+    def dumpLogsInS3(self):
+        pass
 
     def addTime(self):
         time.sleep(100)
