@@ -4,13 +4,14 @@ import random
 import requests
 
 
-# Get logs
+# Get logs and store to S3: Folder name would be current day and content would be all attacks in 3 folders
+
 class GremlinAttacks(object):
     def __init__(self):
-        self.SERVICES = ["ccgf-model"]
+        self.SERVICES = ["ccgf-search"]
         self.ATTACKS = ["DEPLOYMENT", "POD"]
-        self.SECONDS = random.randint(60,240)
-        self.PERCENTAGE = random.randint(90,100)
+        self.SECONDS = random.randint(60, 240)
+        self.PERCENTAGE = random.randint(90, 100)
         self.NAMESPACE = "intcloud-qastaging-ccgf"
         self.CLUSTER = "intcloud-ccgf-eks-devci-usw2"
         self.TEAM_ID = "97ae1e3d-9433-552c-8adf-eba9567e7fe5"
@@ -62,12 +63,10 @@ class GremlinAttacks(object):
             "command": {}
         }
 
-
     def addTime(self):
         time.sleep(100)
 
-
-    def runAllAttacksOnContainers(self, target_name):   # This is for single container, make it for all as a list
+    def runAllAttacksOnContainers(self, target_name):  # This is for single container, make it for all as a list
         self.ioAttackOnContainers(target_name)
         self.cpuAttackOnContainers(target_name)
         self.diskAttackOnContainers(target_name)
@@ -79,8 +78,7 @@ class GremlinAttacks(object):
         self.blackHoleKillAttackOnContainers(target_name)
         self.packetLossKillAttackOnContainers(target_name)
 
-
-    def runAllAttacksOnKubernetes(self, target_name):   # This is for single container, make it for all as a list
+    def runAllAttacksOnKubernetes(self, target_name):  # This is for single container, make it for all as a list
         self.ioAttackOnKubernetes(target_name)
         self.cpuAttackOnKubernetes(target_name)
         self.diskAttackOnKubernetes(target_name)
@@ -92,8 +90,7 @@ class GremlinAttacks(object):
         self.blackHoleKillAttackOnKubernetes(target_name)
         self.packetLossKillAttackOnKubernetes(target_name)
 
-
-    def runAllAttacksOnHost(self, target_name):   # This is for single container, make it for all as a list
+    def runAllAttacksOnHost(self, target_name):  # This is for single container, make it for all as a list
         self.ioAttackOnHosts(target_name)
         self.cpuAttackOnHosts(target_name)
         self.diskAttackOnHosts(target_name)
@@ -105,7 +102,6 @@ class GremlinAttacks(object):
         self.blackHoleKillAttackOnHosts(target_name)
         self.packetLossKillAttackOnHosts(target_name)
         self.timeTravelKillAttackOnHosts(target_name)
-
 
     def getAllActiveContainers(self):
         url = "https://api.gremlin.com/v1/containers"
@@ -128,7 +124,6 @@ class GremlinAttacks(object):
             return result
         else:
             return False
-
 
     def getAllAvailableKubernetesTargets(self):
         url = "https://api.gremlin.com/v1/kubernetes/targets"
@@ -161,6 +156,7 @@ class GremlinAttacks(object):
         else:
             return False
 
+    # 558bd13933363828ca968fb43207d3731fd545da for infa-mopatel
 
     def postAPIRequest(self, url, headers, payload):
         response = requests.post(url=url,
@@ -168,14 +164,12 @@ class GremlinAttacks(object):
                                  data=json.dumps(payload))
         print(response.text)
 
-
     def cpuAttackOnKubernetes(self, target_object):
-        cli_args = ["cpu", "-l", f"{self.SECONDS}", "-c","1", "-p", f"{self.PERCENTAGE}"]
+        cli_args = ["cpu", "-l", f"{self.SECONDS}", "-c", "1", "-p", f"{self.PERCENTAGE}"]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = [target_object]
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
-
 
     def memoryAttackOnKubernetes(self, target_object):
         gb = random.randint(3, 5)
@@ -185,14 +179,12 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
 
-
     def diskAttackOnKubernetes(self, target_object):
-        cli_args = ["disk", "-l", f"{self.SECONDS}", "-d","/tmp", "-w", "1", "-b", "4", "-p", f"{self.PERCENTAGE}"]
+        cli_args = ["disk", "-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-b", "4", "-p", f"{self.PERCENTAGE}"]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = [target_object]
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
-
 
     def ioAttackOnKubernetes(self, target_object):
         cli_args = ["io", "-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-m", "rw", "-s", "4", "-c", "1"]
@@ -200,7 +192,6 @@ class GremlinAttacks(object):
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = [target_object]
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
-
 
     def processKillAttackOnKubernetes(self, target_object):
         pod_process_name = target_object.get("name")
@@ -210,14 +201,12 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
 
-
     def shutDownKillAttackOnKubernetes(self, target_object):
         cli_args = ["shutdown", "-d", "0"]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = [target_object]
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
-
 
     def blackHoleKillAttackOnKubernetes(self, target_object):
         cli_args = ["blackhole", "-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53"]
@@ -227,16 +216,14 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
 
-
     def latencyKillAttackOnKubernetes(self, target_object):
         milli_seconds = random.randint(500, 1000)
-        cli_args = ["latency", "-l", f"{self.SECONDS}","-m", f"{milli_seconds}", "-h", "^api.gremlin.com", "-p", "^53"]
+        cli_args = ["latency", "-l", f"{self.SECONDS}", "-m", f"{milli_seconds}", "-h", "^api.gremlin.com", "-p", "^53"]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
         self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = [target_object]
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
-
 
     def dnsKillAttackOnKubernetes(self, target_object):
         cli_args = ["dns", "-l", f"{self.SECONDS}"]
@@ -246,7 +233,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
 
-
     def packetLossKillAttackOnKubernetes(self, target_object):
         cli_args = ["packet_loss", "-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r", "1"]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
@@ -254,7 +240,6 @@ class GremlinAttacks(object):
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = [target_object]
         self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD)
         self.addTime()
-
 
     def cpuAttackOnHosts(self, instance_id):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
@@ -265,7 +250,6 @@ class GremlinAttacks(object):
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
-
 
     def memoryAttackOnHosts(self, instance_id):
         gb = random.randint(100, 200)
@@ -278,7 +262,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
 
-
     def diskAttackOnHosts(self, instance_id):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
         self.HOSTS_PAYLOAD["command"] = {
@@ -288,7 +271,6 @@ class GremlinAttacks(object):
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
-
 
     def ioAttackOnHosts(self, instance_id):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
@@ -300,7 +282,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
 
-
     def processKillAttackOnHosts(self, instance_id):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
         self.HOSTS_PAYLOAD["command"] = {
@@ -311,7 +292,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
 
-
     def shutDownKillAttackOnHosts(self, instance_id):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
         self.HOSTS_PAYLOAD["command"] = {
@@ -321,7 +301,6 @@ class GremlinAttacks(object):
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
-
 
     def timeTravelKillAttackOnHosts(self, instance_id):
         time_travel_in_secs = random.randint(80000, 100000)
@@ -334,7 +313,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
 
-
     def blackHoleKillAttackOnHosts(self, instance_id):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
         self.HOSTS_PAYLOAD["command"]["providers"] = []
@@ -345,7 +323,6 @@ class GremlinAttacks(object):
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
-
 
     def latencyKillAttackOnHosts(self, instance_id):
         milli_seconds = random.randint(500, 1000)
@@ -359,7 +336,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
 
-
     def dnsKillAttackOnHosts(self, instance_id):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
         self.HOSTS_PAYLOAD["command"]["providers"] = []
@@ -371,7 +347,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
 
-
     def packetLossKillAttackOnHosts(self, instance_id):
         percentage_of_packets_to_drop = random.randint(50, 70)
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance_id]
@@ -379,23 +354,22 @@ class GremlinAttacks(object):
         self.HOSTS_PAYLOAD["command"] = {
             "type": "packet_loss",
             "commandType": "Packet Loss",
-            "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r", f"{percentage_of_packets_to_drop}"]
+            "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r",
+                     f"{percentage_of_packets_to_drop}"]
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD)
         self.addTime()
 
-
     def cpuAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
         self.CONTAINERS_PAYLOAD["command"] = {
-                "type": "cpu",
-                "commandType": "CPU",
-                "args": ["-l", f"{self.SECONDS}", "-p", f"{self.PERCENTAGE}", "-a"]
-            }
+            "type": "cpu",
+            "commandType": "CPU",
+            "args": ["-l", f"{self.SECONDS}", "-p", f"{self.PERCENTAGE}", "-a"]
+        }
 
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
-
 
     def memoryAttackOnContainers(self, pod_name):
         gb = random.randint(100, 200)
@@ -408,7 +382,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
-
     def diskAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
         self.CONTAINERS_PAYLOAD["command"] = {
@@ -418,7 +391,6 @@ class GremlinAttacks(object):
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
-
 
     def ioAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
@@ -430,7 +402,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
-
     def processKillAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
         self.CONTAINERS_PAYLOAD["command"] = {
@@ -440,7 +411,6 @@ class GremlinAttacks(object):
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
-
 
     def shutDownKillAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
@@ -452,7 +422,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
-
     def blackHoleKillAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
         self.CONTAINERS_PAYLOAD["command"]["providers"] = []
@@ -463,7 +432,6 @@ class GremlinAttacks(object):
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
-
 
     def latencyKillAttackOnContainers(self, pod_name):
         milli_seconds = random.randint(500, 1000)
@@ -477,7 +445,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
-
     def dnsKillAttackOnContainers(self, pod_name):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
         self.CONTAINERS_PAYLOAD["command"]["providers"] = []
@@ -489,7 +456,6 @@ class GremlinAttacks(object):
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
-
     def packetLossKillAttackOnContainers(self, pod_name):
         percentage_of_packets_to_drop = random.randint(50, 70)
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [pod_name]
@@ -497,36 +463,38 @@ class GremlinAttacks(object):
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "packet_loss",
             "commandType": "Packet Loss",
-            "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r", f"{percentage_of_packets_to_drop}"]
+            "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r",
+                     f"{percentage_of_packets_to_drop}"]
         }
         self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD)
         self.addTime()
 
 
+if __name__ == '__main__':
+    print("This is working!")
 
-gremlin_obj = GremlinAttacks()
-container_targets = gremlin_obj.getAllActiveContainers()
-k8s_target = gremlin_obj.getAllAvailableKubernetesTargets()
-hosts = ["i-0ca726e746c7a0092","i-0b14d33bee8a136c5","i-0f80e09df9c560ce1","i-09401e4b2cec98d8e","i-0fe1ec19deb5a4e5a","i-067318e06abc81cb8"]
+    gremlin_obj = GremlinAttacks()
+    container_targets = gremlin_obj.getAllActiveContainers()
+    k8s_target = gremlin_obj.getAllAvailableKubernetesTargets()
+    hosts = ["i-0ca726e746c7a0092", "i-0b14d33bee8a136c5", "i-0f80e09df9c560ce1", "i-09401e4b2cec98d8e",
+             "i-0fe1ec19deb5a4e5a", "i-067318e06abc81cb8"]
 
+    # Running Attacks on CONTAINERS:
+    # if container_targets:
+    #     target = container_targets[0]
+    #     print(target)
+    #     gremlin_obj.runAllAttacksOnContainers(target)
 
-# Running Attacks on CONTAINERS:
-if container_targets:
-    target = container_targets[0]
-    print(target)
-    gremlin_obj.runAllAttacksOnContainers(target)
-
-
-# Running Attacks on KUBERNETES:
-if k8s_target:
-    if k8s_target["DEPLOYMENT"]:
-        print(k8s_target["DEPLOYMENT"][0])
-        gremlin_obj.runAllAttacksOnKubernetes(k8s_target["DEPLOYMENT"][0])
-
-    if k8s_target["POD"]:
-        print(k8s_target["POD"][0])
-        gremlin_obj.runAllAttacksOnKubernetes(k8s_target["POD"][0])
-
-
-# Running Attacks on HOSTS:
-gremlin_obj.runAllAttacksOnHost(hosts[0])
+    # Running Attacks on KUBERNETES:
+    # if k8s_target:
+    #     if k8s_target["DEPLOYMENT"]:
+    #         print(k8s_target["DEPLOYMENT"][0])
+    #         gremlin_obj.runAllAttacksOnKubernetes(k8s_target["DEPLOYMENT"][0])
+    #
+    #     if k8s_target["POD"]:
+    #         print(k8s_target["POD"][0])
+    #         gremlin_obj.runAllAttacksOnKubernetes(k8s_target["POD"][0])
+    #
+    #
+    # # Running Attacks on HOSTS:
+    # gremlin_obj.runAllAttacksOnHost(hosts[0])
