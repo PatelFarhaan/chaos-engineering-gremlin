@@ -1,14 +1,8 @@
 pipeline {
-    agent any {
+    agent any
         stages {
 
-            stage('Checkout') {
-                steps {
-                    script {
-                        git credentialsId: 'Jenkins', url: 'https://github.com/infacloud/hawk-gremlin-poc.git'
-                    }
-                }
-            }
+            
 
             stage('Setup Environment') {
                 steps {
@@ -31,4 +25,3 @@ pipeline {
 
         }
     }
-}
