@@ -170,18 +170,19 @@ class GremlinAttacks(object):
                                 data=payload,
                                 headers=self.HEADERS)
         if response.status_code == 200:
-            result = []
+            result = set()
             data = response.json()
             for object in data:
                 if object.get("container_labels"):
                     if object["container_labels"].get("io.kubernetes.pod.namespace"):
                         if object["container_labels"]["io.kubernetes.pod.namespace"] == self.NAMESPACE:
                             pod_name = object["container_labels"]["io.kubernetes.pod.name"]
+                            container_name = object["container_labels"]["io.kubernetes.container.name"]
                             if pod_name:
                                 for service in self.SERVICES:
                                     if service in pod_name:
-                                        result.append(pod_name)
-            return result
+                                        result.add(container_name)
+            return list(result)
         else:
             return False
 
@@ -573,7 +574,7 @@ class GremlinAttacks(object):
 if __name__ == '__main__':
     gremlin_obj = GremlinAttacks()
     gremlin_obj.LOGGER.info("attack object created")
-    
+
     container_targets = gremlin_obj.getAllActiveContainers()
     gremlin_obj.LOGGER.info(f"retrieved all active containers: {container_targets}")
 
