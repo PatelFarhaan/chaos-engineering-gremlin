@@ -1,0 +1,586 @@
+import os
+import json
+import time
+import boto3
+import random
+import logging
+import requests
+from datetime import datetime
+
+
+class GremlinAttacks(object):
+    def __init__(self):
+        self.ATTACKS = ["DEPLOYMENT", "POD"]
+        self.SECONDS = random.randint(60, 240)
+        self.PERCENTAGE = random.randint(90, 100)
+        self.NAMESPACE = "intcloud-qastaging-ccgf"
+        self.SERVICES = ["ccgf-model", "ccgf-search"]
+        self.CLUSTER = "intcloud-ccgf-eks-devci-usw2"
+        self.TEAM_ID = "97ae1e3d-9433-552c-8adf-eba9567e7fe5"
+        self.DT_STAMP = datetime.utcnow().strftime("%d %b %Y")
+        self.HOSTS_URL = f"https://api.gremlin.com/v1/attacks/new?teamId={self.TEAM_ID}"
+        self.API_KEY = "***REMOVED_GREMLIN_API_KEY***"
+        self.KUBERNETS_URL = f"https://api.gremlin.com/v1/kubernetes/attacks/new?teamId={self.TEAM_ID}"
+
+        dts = datetime.utcnow().strftime("%d-%m-%Y")
+        logging.basicConfig(filemode='a',
+                            level=logging.DEBUG,
+                            datefmt='%m-%d-%Y %H:%M:%S',
+                            filename=f"{os.getcwd()}/{dts}.log",
+                            format="[%(asctime)s] %(levelname)s: %(message)s")
+        self.LOGGER = logging.getLogger(__name__)
+
+        self.HEADERS = {
+            "Content-Type": "application/json;charset=utf-8",
+            "Authorization": f"Key {self.API_KEY}"
+        }
+
+        self.RESULTS = {
+            "hosts": {
+                "process_kill": []
+            },
+            "containers": {
+                "process_kill": []
+            },
+            "kubernetes": {
+                "process_kill": []
+            }
+        }
+
+        self.KUBERNETES_PAYLOAD = {
+            "targetDefinition": {
+                "strategy": {
+                    "labels": {},
+                    "k8sObjects": [],
+                    "percentage": 100
+                }
+            },
+            "impactDefinition": {
+                "cliArgs": []
+            }
+        }
+
+        self.HOSTS_PAYLOAD = {
+            "target": {
+                "type": "Random",
+                "hosts": {
+                    "multiSelectTags": {
+                        "instance-id": []
+                    }
+                },
+                "percent": 100
+            },
+            "command": {}
+        }
+
+        self.CONTAINERS_PAYLOAD = {
+            "target": {
+                "type": "Random",
+                "containers": {
+                    "multiSelectLabels": {
+                        "io.kubernetes.pod.name": []
+                    }
+                },
+                "percent": 100
+            },
+            "command": {}
+        }
+
+    def connectToS3Bucket(self):
+        session = boto3.Session(
+            aws_access_key_id="ASIAXXFFEFG4LOUJTBCL",
+            aws_secret_access_key="***REMOVED_AWS_SECRET_KEY***",
+            aws_session_token="***REMOVED_AWS_SESSION_TOKEN***",
+        )
+        return session
+
+    def dumpLogsInS3(self):
+        bucket_name = "ccgf-binoj-test"
+        session = self.connectToS3Bucket()
+        client = session.client('s3')
+        data = json.dumps(self.RESULTS)
+
+        try:
+            client.put_object(Body=data, Bucket=bucket_name, Key=f'{self.DT_STAMP}/results.json')
+            dts = datetime.utcnow().strftime("%d-%m-%Y")
+            file_path = f"{os.getcwd()}/{dts}.log"
+            s3_resource = session.resource('s3')
+
+            bucket = s3_resource.Bucket(bucket_name)
+            bucket.upload_file(
+                Key="result.log",
+                Filename=file_path)
+        except:
+            return False
+
+    def addTime(self, is_process_killer=False):
+        if is_process_killer:
+            time.sleep(5)
+        else:
+            time.sleep(60)
+
+    def runAllAttacks(self, attack, target_name):
+        self.ioAttack(attack, target_name)
+        self.cpuAttack(attack, target_name)
+        self.diskAttack(attack, target_name)
+        self.memoryAttack(attack, target_name)
+        self.dnsKillAttack(attack, target_name)
+        self.latencyKillAttack(attack, target_name)
+        self.processKillAttack(attack, target_name)
+        self.shutDownKillAttack(attack, target_name)
+        self.blackHoleKillAttack(attack, target_name)
+        self.packetLossKillAttack(attack, target_name)
+        self.timeTravelKillAttack(attack, target_name)
+
+    def getAllActiveContainers(self):
+        url = "https://api.gremlin.com/v1/containers"
+        payload = {}
+        response = requests.get(url=url,
+                                data=payload,
+                                headers=self.HEADERS)
+        if response.status_code == 200:
+            result = set()
+            data = response.json()
+            for object in data:
+                if object.get("container_labels"):
+                    if object["container_labels"].get("io.kubernetes.pod.namespace"):
+                        if object["container_labels"]["io.kubernetes.pod.namespace"] == self.NAMESPACE:
+                            pod_name = object["container_labels"]["io.kubernetes.pod.name"]
+                            container_name = object["container_labels"]["io.kubernetes.container.name"]
+                            if pod_name:
+                                for service in self.SERVICES:
+                                    if service in pod_name:
+                                        result.add(container_name)
+            return list(result)
+        else:
+            return False
+
+    def getAllAvailableKubernetesTargets(self):
+        url = "https://api.gremlin.com/v1/kubernetes/targets"
+        payload = {}
+        response = requests.get(url,
+                                data=payload,
+                                headers=self.HEADERS)
+
+        if response.status_code == 200:
+            data = response.json()
+            result = {}
+            result["POD"] = []
+            result["DEPLOYMENT"] = []
+
+            for clusters in data:
+                if clusters.get("clusterId") == self.CLUSTER:
+                    if clusters.get("objects"):
+                        for object in clusters.get("objects"):
+                            if object.get("namespace") == self.NAMESPACE:
+
+                                if object.get("kind") == "DEPLOYMENT":
+                                    for service in self.SERVICES:
+                                        if service in object.get("name"):
+                                            result["DEPLOYMENT"].append(object)
+                                elif object.get("kind") == "POD":
+                                    for service in self.SERVICES:
+                                        if service in object.get("name"):
+                                            result["POD"].append(object)
+            return result
+        else:
+            return False
+
+    def postAPIRequest(self, url, headers, payload, target, attack, cli_args, is_process_killer=False):
+        print(f"{target}: {attack.upper()} attack: {cli_args} \n")
+        response = requests.post(url=url,
+                                 headers=headers,
+                                 data=json.dumps(payload))
+        attack_id = response.text
+        if is_process_killer:
+            self.RESULTS[target]["process_kill"].append(attack_id)
+        else:
+            self.RESULTS[target][attack] = attack_id
+
+        self.LOGGER.info(f"{attack.upper()} attack: {cli_args}: {attack_id} \n")
+        self.addTime(is_process_killer)
+
+    def cpuAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            cli_args = ["cpu", "-l", f"{self.SECONDS}", "-c", "1", "-p", f"{self.PERCENTAGE}"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD,
+                                "kubernetes", "cpu", cli_args)
+
+        if attack == "hosts":
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "cpu",
+                "commandType": "CPU",
+                "args": ["-l", f"{self.SECONDS}", "-p", f"{self.PERCENTAGE}", "-a"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "cpu",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "cpu",
+                "commandType": "CPU",
+                "args": ["-l", f"{self.SECONDS}", "-p", f"{self.PERCENTAGE}", "-a"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "cpu",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def memoryAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            gb = random.randint(3, 5)
+            cli_args = ['memory', '-l', f"{self.SECONDS}", '-g', f"{gb}", "1"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "memory",
+                                cli_args)
+
+        if attack == "hosts":
+            gb = random.randint(100, 200)
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "memory",
+                "commandType": "Memory",
+                "args": ["-l", f"{self.SECONDS}", "-g", f"{gb}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "memory",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            gb = random.randint(100, 200)
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "memory",
+                "commandType": "Memory",
+                "args": ["-l", f"{self.SECONDS}", "-g", f"{gb}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "memory",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def diskAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            cli_args = ["disk", "-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-b", "4", "-p", f"{self.PERCENTAGE}"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "disk",
+                                cli_args)
+
+        if attack == "hosts":
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "disk",
+                "commandType": "Disk",
+                "args": ["-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-b", "4", "-p", f"{self.PERCENTAGE}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "disk",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "disk",
+                "commandType": "Disk",
+                "args": ["-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-b", "4", "-p", f"{self.PERCENTAGE}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "disk",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def ioAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            cli_args = ["io", "-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-m", "rw", "-s", "4", "-c", "1"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "io",
+                                cli_args)
+
+        if attack == "hosts":
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "io",
+                "commandType": "IO",
+                "args": ["-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-m", "rw", "-s", "4", "-c", "1"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "io",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "io",
+                "commandType": "IO",
+                "args": ["-l", f"{self.SECONDS}", "-d", "/tmp", "-w", "1", "-m", "rw", "-s", "4", "-c", "1"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "io",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def processKillAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            for object in target_object:
+                cli_args = ["process_killer", "-l", f"{self.SECONDS}", "-i", "0", "-p", f"{object}"]
+                self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+                self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+                self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes",
+                                    "process_kill",
+                                    cli_args, is_process_killer=True)
+
+        if attack == "hosts":
+            for instance in target_object:
+                self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = [instance]
+                self.HOSTS_PAYLOAD["command"] = {
+                    "type": "process_killer",
+                    "commandType": "Process Killer",
+                    "args": ["-l", f"{self.SECONDS}", "-i", "0", "-p", f"{instance}"]
+                }
+                self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "process_kill",
+                                    self.HOSTS_PAYLOAD["command"]["args"], is_process_killer=True)
+
+        if attack == "containers":
+            for container in target_object:
+                self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [
+                    container]
+                self.CONTAINERS_PAYLOAD["command"] = {
+                    "type": "process_killer",
+                    "commandType": "Process Killer",
+                    "args": ["-l", f"{self.SECONDS}", "-i", "0", "-p", f"{container}"]
+                }
+                self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "process_kill",
+                                    self.CONTAINERS_PAYLOAD["command"]["args"], is_process_killer=True)
+
+    def shutDownKillAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            cli_args = ["shutdown", "-d", "0"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "shutdown",
+                                cli_args)
+
+        if attack == "hosts":
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "shutdown",
+                "commandType": "Shutdown",
+                "args": ["-d", "0", "-r"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "shutdown",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "shutdown",
+                "commandType": "Shutdown",
+                "args": ["-d", "0", "-r"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "shutdown",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def blackHoleKillAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            cli_args = ["blackhole", "-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "blackhole",
+                                cli_args)
+
+        if attack == "hosts":
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"]["providers"] = []
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "blackhole",
+                "commandType": "Blackhole",
+                "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "blackhole",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"]["providers"] = []
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "blackhole",
+                "commandType": "Blackhole",
+                "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "blackhole",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def latencyKillAttack(self, attack, target_object: list):
+        milli_seconds = random.randint(500, 1000)
+
+        if attack == "kubernetes":
+            cli_args = ["latency", "-l", f"{self.SECONDS}", "-m", f"{milli_seconds}", "-h", "^api.gremlin.com", "-p",
+                        "^53"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "latency",
+                                cli_args)
+
+        if attack == "hosts":
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"]["providers"] = []
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "latency",
+                "commandType": "Latency",
+                "args": ["-l", f"{self.SECONDS}", "-m", f"{milli_seconds}", "-h", "^api.gremlin.com", "-p", "^53"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "latency",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"]["providers"] = []
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "latency",
+                "commandType": "Latency",
+                "args": ["-l", f"{self.SECONDS}", "-m", f"{milli_seconds}", "-h", "^api.gremlin.com", "-p", "^53"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "latency",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def dnsKillAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            cli_args = ["dns", "-l", f"{self.SECONDS}"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "dns",
+                                cli_args)
+
+        if attack == "hosts":
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"]["providers"] = []
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "dns",
+                "commandType": "DNS",
+                "args": ["-l", f"{self.SECONDS}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "dns",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"]["providers"] = []
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "dns",
+                "commandType": "DNS",
+                "args": ["-l", f"{self.SECONDS}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "dns",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def packetLossKillAttack(self, attack, target_object: list):
+        if attack == "kubernetes":
+            cli_args = ["packet_loss", "-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r", "1"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "packet_loss",
+                                cli_args)
+
+        if attack == "hosts":
+            percentage_of_packets_to_drop = random.randint(50, 70)
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"]["providers"] = []
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "packet_loss",
+                "commandType": "Packet Loss",
+                "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r",
+                         f"{percentage_of_packets_to_drop}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "packet_loss",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+        if attack == "containers":
+            percentage_of_packets_to_drop = random.randint(50, 70)
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.pod.name"] = target_object
+            self.CONTAINERS_PAYLOAD["command"]["providers"] = []
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "packet_loss",
+                "commandType": "Packet Loss",
+                "args": ["-l", f"{self.SECONDS}", "-h", "^api.gremlin.com", "-p", "^53", "-r",
+                         f"{percentage_of_packets_to_drop}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "packet_loss",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
+
+    def timeTravelKillAttack(self, attack, target_object):
+        if attack == "hosts":
+            time_travel_in_secs = random.randint(80000, 100000)
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = target_object
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "time_travel",
+                "commandType": "Time Travel",
+                "args": ["-l", f"{self.SECONDS}", "-o", f"{time_travel_in_secs}"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "time_travel",
+                                self.HOSTS_PAYLOAD["command"]["args"])
+
+
+if __name__ == '__main__':
+    gremlin_obj = GremlinAttacks()
+    gremlin_obj.LOGGER.info("attack object created")
+
+    container_targets = gremlin_obj.getAllActiveContainers()
+    gremlin_obj.LOGGER.info(f"retrieved all active containers: {container_targets}")
+
+    k8s_target = gremlin_obj.getAllAvailableKubernetesTargets()
+    gremlin_obj.LOGGER.info(f"retrieved all active kubernetes targets {k8s_target}")
+
+    hosts = ["i-0ca726e746c7a0092", "i-0b14d33bee8a136c5", "i-0f80e09df9c560ce1", "i-09401e4b2cec98d8e",
+             "i-0fe1ec19deb5a4e5a", "i-067318e06abc81cb8"]
+    gremlin_obj.LOGGER.info(f"all active hosts: {hosts}")
+
+    #  Running Attacks on CONTAINERS:
+    if container_targets:
+        print("Starting Container Attacks")
+        gremlin_obj.LOGGER.info(f"Starting Container Attack")
+
+        gremlin_obj.runAllAttacks("containers", container_targets)
+
+    #  Running Attacks on KUBERNETES:
+    if k8s_target:
+        if k8s_target["DEPLOYMENT"]:
+            print("Starting Deployment Attacks")
+            gremlin_obj.LOGGER.info(f"Starting Deployment Attacks")
+            gremlin_obj.runAllAttacks("kubernetes", k8s_target["DEPLOYMENT"])
+
+    if k8s_target["POD"]:
+        print("Starting POD Attacks")
+        gremlin_obj.LOGGER.info(f"Starting POD Attacks")
+        gremlin_obj.runAllAttacks("kubernetes", k8s_target["POD"])
+
+    #  Running Attacks on HOSTS:
+    print("Running Host Attacks")
+    gremlin_obj.LOGGER.info(f"Running Host Attacks")
+    gremlin_obj.runAllAttacks("hosts", hosts)
+
+    #  Write results to S3 bucket
+    print("Logging results to S3")
+    gremlin_obj.LOGGER.info(f"Logging results to S3")
+    gremlin_obj.dumpLogsInS3()
+
+
+
+# import requests
+# import time
+# def request_test():
+#     start = time.time()
+#     resp = requests.get(url="https://qastaging.hawk.devml.infaqa.com/search/swagger-ui.html#/Model_Info/getAssociationKinds")
+#     end= time.time()
+#     print(resp.status_code, end-start)
+#
+#
+# request_test()
