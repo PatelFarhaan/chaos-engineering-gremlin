@@ -118,9 +118,9 @@ class GremlinAttacks(object):
 
     def addTime(self, is_process_killer=False):
         if is_process_killer:
-            time.sleep(5)
+            time.sleep(10)
         else:
-            time.sleep(60)
+            time.sleep(self.SECONDS + 20)
 
 
     def runAllAttacksOnContainers(self, target_name):
