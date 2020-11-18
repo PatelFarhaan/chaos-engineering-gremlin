@@ -6,7 +6,7 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        apt install python3.7
+                        apt-get install python3.7
                         python3 --version
                         """
                     }
