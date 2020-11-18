@@ -6,14 +6,7 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        #!/bin/bash
-                        ls
-                        cd venv/bin
-                        ls
-                        ./activate
-                        cd ../..
-                        ls
-                        python3 main.py
+                        apt-get install python3-pip
                         """
                     }
                 }

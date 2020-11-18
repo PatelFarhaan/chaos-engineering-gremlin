@@ -589,7 +589,6 @@ if __name__ == '__main__':
     if container_targets:
         print("Starting Container Attacks")
         gremlin_obj.LOGGER.info(f"Starting Container Attack")
-
         gremlin_obj.runAllAttacksOnContainers(container_targets)
 
     #  Running Attacks on KUBERNETES:
