@@ -6,8 +6,9 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        apt update
-                        sudo apt install python3.7
+                        add-apt-repository ppa:deadsnakes/ppa
+                        apt-get update
+                        apt-get install python3.7
                         """
                     }
                 }
