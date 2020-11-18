@@ -6,7 +6,8 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        apt-get install python3-pip -y
+                        pip3 install requirements.txt
+                        python3 main.py
                         """
                     }
                 }
