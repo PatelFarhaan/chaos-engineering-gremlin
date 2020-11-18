@@ -103,7 +103,7 @@ class GremlinAttacks(object):
         data = json.dumps(self.RESULTS)
 
         try:
-            client.put_object(Body=data, Bucket=bucket_name, Key=f'{self.DT_STAMP}/results.json')
+            client.put_object(Body=data, Bucket=bucket_name, Key='{}/results.json'.format(self.DT_STAMP))
             dts = datetime.utcnow().strftime("%d-%m-%Y")
             file_path = "{}/{}.log".format(os.getcwd(), dts)
             s3_resource = session.resource('s3')
