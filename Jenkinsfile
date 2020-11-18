@@ -6,7 +6,7 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        apt-get install -python3-pip
+                        apt-get install python3-pip
                         """
                     }
                 }
