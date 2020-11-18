@@ -6,7 +6,7 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        python3 --version
+                        update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 2
                         """
                     }
                 }
