@@ -6,7 +6,7 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        pip3 install requirements.txt
+                        source venv/bin/activate
                         python3 main.py
                         """
                     }
