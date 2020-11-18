@@ -6,7 +6,7 @@ pipeline {
                 steps {
                     script {
                         sh """
-                        python3 main.py
+                        python3 --version
                         """
                     }
                 }
