@@ -453,7 +453,7 @@ class GremlinAttacks(object):
 
 
     def cpuAttackOnContainers(self, containers: list):
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "cpu",
             "commandType": "CPU",
@@ -465,7 +465,7 @@ class GremlinAttacks(object):
 
     def memoryAttackOnContainers(self, containers: list):
         gb = random.randint(100, 200)
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "memory",
             "commandType": "Memory",
@@ -476,7 +476,7 @@ class GremlinAttacks(object):
 
 
     def diskAttackOnContainers(self, containers: list):
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "disk",
             "commandType": "Disk",
@@ -487,7 +487,7 @@ class GremlinAttacks(object):
 
 
     def ioAttackOnContainers(self, containers: list):
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "io",
             "commandType": "IO",
@@ -499,7 +499,7 @@ class GremlinAttacks(object):
 
     def processKillAttackOnContainers(self, containers: list):
         for container in containers:
-            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = [container]
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = [container]
             self.CONTAINERS_PAYLOAD["command"] = {
                 "type": "process_killer",
                 "commandType": "Process Killer",
@@ -510,7 +510,7 @@ class GremlinAttacks(object):
 
 
     def shutDownKillAttackOnContainers(self, containers: list):
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "shutdown",
             "commandType": "Shutdown",
@@ -521,7 +521,7 @@ class GremlinAttacks(object):
 
 
     def blackHoleKillAttackOnContainers(self, containers: list):
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "blackhole",
@@ -534,7 +534,7 @@ class GremlinAttacks(object):
 
     def latencyKillAttackOnContainers(self, containers: list):
         milli_seconds = random.randint(500, 1000)
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "latency",
@@ -546,7 +546,7 @@ class GremlinAttacks(object):
 
 
     def dnsKillAttackOnContainers(self, containers: list):
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "dns",
@@ -559,7 +559,7 @@ class GremlinAttacks(object):
 
     def packetLossKillAttackOnContainers(self, containers: list):
         percentage_of_packets_to_drop = random.randint(50, 70)
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.pod.name"] = containers
+        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"]["io.kubernetes.container.name"] = containers
         self.CONTAINERS_PAYLOAD["command"]["providers"] = []
         self.CONTAINERS_PAYLOAD["command"] = {
             "type": "packet_loss",
