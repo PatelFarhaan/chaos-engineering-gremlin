@@ -87,33 +87,33 @@ class GremlinAttacks(object):
         }
 
 
-    def connectToS3Bucket(self):
-        session = boto3.Session(
-            aws_access_key_id="ASIAXXFFEFG4LOUJTBCL",
-            aws_secret_access_key="***REMOVED_AWS_SECRET_KEY***",
-            aws_session_token="***REMOVED_AWS_SESSION_TOKEN***",
-        )
-        return session
+    # def connectToS3Bucket(self):
+    #     session = boto3.Session(
+    #         aws_access_key_id="ASIAXXFFEFG4LOUJTBCL",
+    #         aws_secret_access_key="***REMOVED_AWS_SECRET_KEY***",
+    #         aws_session_token="***REMOVED_AWS_SESSION_TOKEN***",
+    #     )
+    #     return session
 
 
-    def dumpLogsInS3(self):
-        bucket_name = "ccgf-binoj-test"
-        session = self.connectToS3Bucket()
-        client = session.client('s3')
-        data = json.dumps(self.RESULTS)
-
-        try:
-            client.put_object(Body=data, Bucket=bucket_name, Key='{}/results.json'.format(self.DT_STAMP))
-            dts = datetime.utcnow().strftime("%d-%m-%Y")
-            file_path = "{}/{}.log".format(os.getcwd(), dts)
-            s3_resource = session.resource('s3')
-
-            bucket = s3_resource.Bucket(bucket_name)
-            bucket.upload_file(
-                Key="result.log",
-                Filename=file_path)
-        except:
-            return False
+    # def dumpLogsInS3(self):
+    #     bucket_name = "ccgf-binoj-test"
+    #     session = self.connectToS3Bucket()
+    #     client = session.client('s3')
+    #     data = json.dumps(self.RESULTS)
+    #
+    #     try:
+    #         client.put_object(Body=data, Bucket=bucket_name, Key='{}/results.json'.format(self.DT_STAMP))
+    #         dts = datetime.utcnow().strftime("%d-%m-%Y")
+    #         file_path = "{}/{}.log".format(os.getcwd(), dts)
+    #         s3_resource = session.resource('s3')
+    #
+    #         bucket = s3_resource.Bucket(bucket_name)
+    #         bucket.upload_file(
+    #             Key="result.log",
+    #             Filename=file_path)
+    #     except:
+    #         return False
 
 
     def addTime(self, is_process_killer=False):
@@ -573,42 +573,37 @@ class GremlinAttacks(object):
 
 if __name__ == '__main__':
     gremlin_obj = GremlinAttacks()
-    gremlin_obj.LOGGER.info("attack object created")
+    gremlin_obj.LOGGER.info("attack object created \n")
 
     container_targets = gremlin_obj.getAllActiveContainers()
-    gremlin_obj.LOGGER.info("retrieved all active containers: {}".format(container_targets))
+    gremlin_obj.LOGGER.info("retrieved all active containers: {} \n".format(container_targets))
 
     k8s_target = gremlin_obj.getAllAvailableKubernetesTargets()
-    gremlin_obj.LOGGER.info("retrieved all active kubernetes targets {}".format(k8s_target))
+    gremlin_obj.LOGGER.info("retrieved all active kubernetes targets {} \n".format(k8s_target))
 
     hosts = ["i-0ca726e746c7a0092", "i-0b14d33bee8a136c5", "i-0f80e09df9c560ce1", "i-09401e4b2cec98d8e",
              "i-0fe1ec19deb5a4e5a", "i-067318e06abc81cb8"]
-    gremlin_obj.LOGGER.info("all active hosts: {}".format(hosts))
+    gremlin_obj.LOGGER.info("all active hosts: {} \n".format(hosts))
 
     #  Running Attacks on CONTAINERS:
     if container_targets:
         print("Starting Container Attacks")
-        gremlin_obj.LOGGER.info("Starting Container Attack")
+        gremlin_obj.LOGGER.info("Starting Container Attack \n")
         gremlin_obj.runAllAttacksOnContainers(container_targets)
 
     #  Running Attacks on KUBERNETES:
     if k8s_target:
         if k8s_target["DEPLOYMENT"]:
-            print("Starting Deployment Attacks")
-            gremlin_obj.LOGGER.info("Starting Deployment Attacks")
+            print("Starting Deployment Attacks \n")
+            gremlin_obj.LOGGER.info("Starting Deployment Attacks \n")
             gremlin_obj.runAllAttacksOnKubernetes(k8s_target["DEPLOYMENT"])
 
     if k8s_target["POD"]:
-        print("Starting POD Attacks")
-        gremlin_obj.LOGGER.info("Starting POD Attacks")
+        print("Starting POD Attacks \n")
+        gremlin_obj.LOGGER.info("Starting POD Attacks \n")
         gremlin_obj.runAllAttacksOnKubernetes(k8s_target["POD"])
 
     #  Running Attacks on HOSTS:
-    print("Running Host Attacks")
-    gremlin_obj.LOGGER.info("Running Host Attacks")
+    print("Running Host Attacks \n")
+    gremlin_obj.LOGGER.info("Running Host Attacks \n")
     gremlin_obj.runAllAttacksOnHost(hosts)
-
-    #  Write results to S3 bucket
-    print("Logging results to S3")
-    gremlin_obj.LOGGER.info("Logging results to S3")
-    gremlin_obj.dumpLogsInS3()
