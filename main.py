@@ -11,7 +11,7 @@ from datetime import datetime
 class GremlinAttacks(object):
     def __init__(self):
         self.ATTACKS = ["DEPLOYMENT", "POD"]
-        self.SECONDS = random.randint(60, 240)
+        self.SECONDS = random.randint(60, 120)
         self.PERCENTAGE = random.randint(90, 100)
         self.NAMESPACE = "intcloud-qastaging-ccgf"
         self.SERVICES = ["ccgf-model", "ccgf-search"]
@@ -78,7 +78,7 @@ class GremlinAttacks(object):
                 "type": "Random",
                 "containers": {
                     "multiSelectLabels": {
-                        "io.kubernetes.pod.name": []
+                        "io.kubernetes.container.name": []
                     }
                 },
                 "percent": 100
@@ -87,38 +87,9 @@ class GremlinAttacks(object):
         }
 
 
-    # def connectToS3Bucket(self):
-    #     session = boto3.Session(
-    #         aws_access_key_id="ASIAXXFFEFG4LOUJTBCL",
-    #         aws_secret_access_key="***REMOVED_AWS_SECRET_KEY***",
-    #         aws_session_token="***REMOVED_AWS_SESSION_TOKEN***",
-    #     )
-    #     return session
-
-
-    # def dumpLogsInS3(self):
-    #     bucket_name = "ccgf-binoj-test"
-    #     session = self.connectToS3Bucket()
-    #     client = session.client('s3')
-    #     data = json.dumps(self.RESULTS)
-    #
-    #     try:
-    #         client.put_object(Body=data, Bucket=bucket_name, Key='{}/results.json'.format(self.DT_STAMP))
-    #         dts = datetime.utcnow().strftime("%d-%m-%Y")
-    #         file_path = "{}/{}.log".format(os.getcwd(), dts)
-    #         s3_resource = session.resource('s3')
-    #
-    #         bucket = s3_resource.Bucket(bucket_name)
-    #         bucket.upload_file(
-    #             Key="result.log",
-    #             Filename=file_path)
-    #     except:
-    #         return False
-
-
     def addTime(self, is_process_killer=False):
         if is_process_killer:
-            time.sleep(10)
+            time.sleep(5)
         else:
             time.sleep(self.SECONDS + 20)
 
@@ -220,21 +191,26 @@ class GremlinAttacks(object):
 
 
     def postAPIRequest(self, url, headers, payload, target, attack, cli_args, is_process_killer=False):
+        import ipdb; ipdb.set_trace()
         print("{}: {} attack: {} \n".format(target, attack.upper(), cli_args))
         response = requests.post(url=url,
                                  headers=headers,
                                  data=json.dumps(payload))
         attack_id =  response.text
+
         if is_process_killer:
             self.RESULTS[target]["process_kill"].append(attack_id)
         else:
             self.RESULTS[target][attack] = attack_id
 
         self.LOGGER.info("{} attack: {}: {} \n".format(attack.upper(), cli_args, attack_id))
-        self.addTime(is_process_killer)
+
+        if response.status_code != 402:
+            self.addTime(is_process_killer)
 
 
-    def cpuAttackOnKubernetes(self, target_object: list):
+
+    def cpuAttackOnKubernetes(self, at: list):
         cli_args = ["cpu", "-l", "{}".format(self.SECONDS), "-c", "1", "-p", "{}".format(self.PERCENTAGE)]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
@@ -597,12 +573,12 @@ if __name__ == '__main__':
             print("Starting Deployment Attacks \n")
             gremlin_obj.LOGGER.info("Starting Deployment Attacks \n")
             gremlin_obj.runAllAttacksOnKubernetes(k8s_target["DEPLOYMENT"])
-
+    
     if k8s_target["POD"]:
         print("Starting POD Attacks \n")
         gremlin_obj.LOGGER.info("Starting POD Attacks \n")
         gremlin_obj.runAllAttacksOnKubernetes(k8s_target["POD"])
-
+    
     #  Running Attacks on HOSTS:
     print("Running Host Attacks \n")
     gremlin_obj.LOGGER.info("Running Host Attacks \n")
