@@ -191,7 +191,6 @@ class GremlinAttacks(object):
 
 
     def postAPIRequest(self, url, headers, payload, target, attack, cli_args, is_process_killer=False):
-        import ipdb; ipdb.set_trace()
         print("{}: {} attack: {} \n".format(target, attack.upper(), cli_args))
         response = requests.post(url=url,
                                  headers=headers,
