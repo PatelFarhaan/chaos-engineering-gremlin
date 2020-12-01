@@ -199,7 +199,7 @@ class GremlinAttacks(object):
         if response.status_code != 402:
             self.addTime(is_process_killer)
 
-    def cpuAttackOnKubernetes(self, at: list):
+    def cpuAttackOnKubernetes(self, target_object: list):
         cli_args = ["cpu", "-l", "{}".format(self.SECONDS), "-c", "1", "-p", "{}".format(self.PERCENTAGE)]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
