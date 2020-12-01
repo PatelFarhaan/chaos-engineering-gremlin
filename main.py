@@ -14,7 +14,7 @@ class GremlinAttacks(object):
         self.PERCENTAGE = random.randint(90, 100)
         self.NAMESPACE = "intcloud-qastaging-ccgf"
         self.SERVICES = ["ccgf-model", "ccgf-search"]
-        self.CLUSTER = "intcloud-ccgf-eks-devci-usw2"
+        self.CLUSTER = "intcloud-ccgf-eks-devci-usw2"  # just by name, its actual qa staging
         self.TEAM_ID = "97ae1e3d-9433-552c-8adf-eba9567e7fe5"
         self.DT_STAMP = datetime.utcnow().strftime("%d %b %Y")
         self.HOSTS_URL = "https://api.gremlin.com/v1/attacks/new?teamId={}".format(self.TEAM_ID)
@@ -104,16 +104,16 @@ class GremlinAttacks(object):
         self.packetLossKillAttackOnContainers(target_name)
 
     def runAllAttacksOnKubernetes(self, target_name):
-        self.ioAttackOnKubernetes(target_name)
-        self.cpuAttackOnKubernetes(target_name)
-        self.diskAttackOnKubernetes(target_name)
-        self.memoryAttackOnKubernetes(target_name)
-        self.dnsKillAttackOnKubernetes(target_name)
+        # self.ioAttackOnKubernetes(target_name)
+        # self.cpuAttackOnKubernetes(target_name)
+        # self.diskAttackOnKubernetes(target_name)
+        # self.memoryAttackOnKubernetes(target_name)
+        # self.dnsKillAttackOnKubernetes(target_name)
         self.processKillAttackOnKubernetes(target_name)
-        self.latencyKillAttackOnKubernetes(target_name)
-        self.shutDownKillAttackOnKubernetes(target_name)
-        self.blackHoleKillAttackOnKubernetes(target_name)
-        self.packetLossKillAttackOnKubernetes(target_name)
+        # self.latencyKillAttackOnKubernetes(target_name)
+        # self.shutDownKillAttackOnKubernetes(target_name)
+        # self.blackHoleKillAttackOnKubernetes(target_name)
+        # self.packetLossKillAttackOnKubernetes(target_name)
 
     def runAllAttacksOnHost(self, target_name):
         self.ioAttackOnHosts(target_name)
@@ -195,7 +195,6 @@ class GremlinAttacks(object):
             self.RESULTS[target][attack] = attack_id
 
         self.LOGGER.info("{} attack: {}: {} \n".format(attack.upper(), cli_args, attack_id))
-
         if response.status_code != 402:
             self.addTime(is_process_killer)
 
@@ -233,7 +232,8 @@ class GremlinAttacks(object):
         for object in target_object:
             cli_args = ["process_killer", "-l", "{}".format(self.SECONDS), "-i", "0", "-p", "{}".format(object)]
             self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
-            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = [object]
+            print("\n\n\n",self.KUBERNETES_PAYLOAD, "end\n\n\n")
             self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "process_kill",
                                 cli_args, is_process_killer=True)
 
