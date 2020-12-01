@@ -1,6 +1,8 @@
+import os
 import json
 import time
 import random
+import logging
 import requests
 from datetime import datetime
 
@@ -15,9 +17,17 @@ class GremlinAttacks(object):
         self.CLUSTER = "intcloud-ccgf-eks-devci-usw2"
         self.TEAM_ID = "97ae1e3d-9433-552c-8adf-eba9567e7fe5"
         self.DT_STAMP = datetime.utcnow().strftime("%d %b %Y")
-        self.API_KEY = "***REMOVED_GREMLIN_API_KEY***"
         self.HOSTS_URL = "https://api.gremlin.com/v1/attacks/new?teamId={}".format(self.TEAM_ID)
+        self.API_KEY = "***REMOVED_GREMLIN_API_KEY***"
         self.KUBERNETS_URL = "https://api.gremlin.com/v1/kubernetes/attacks/new?teamId={}".format(self.TEAM_ID)
+
+        dts = datetime.utcnow().strftime("%d-%m-%Y")
+        logging.basicConfig(filemode='a',
+                            level=logging.DEBUG,
+                            datefmt='%m-%d-%Y %H:%M:%S',
+                            filename="{}/{}.log".format(os.getcwd(), dts),
+                            format="[%(asctime)s] %(levelname)s: %(message)s")
+        self.LOGGER = logging.getLogger(__name__)
 
         self.HEADERS = {
             "Content-Type": "application/json;charset=utf-8",
@@ -184,12 +194,12 @@ class GremlinAttacks(object):
         else:
             self.RESULTS[target][attack] = attack_id
 
-        print("{} attack: {}: {} \n".format(attack.upper(), cli_args, attack_id))
+        self.LOGGER.info("{} attack: {}: {} \n".format(attack.upper(), cli_args, attack_id))
 
         if response.status_code != 402:
             self.addTime(is_process_killer)
 
-    def cpuAttackOnKubernetes(self, target_object: list):
+    def cpuAttackOnKubernetes(self, at: list):
         cli_args = ["cpu", "-l", "{}".format(self.SECONDS), "-c", "1", "-p", "{}".format(self.PERCENTAGE)]
         self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
         self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
@@ -514,13 +524,13 @@ class GremlinAttacks(object):
 
 if __name__ == '__main__':
     gremlin_obj = GremlinAttacks()
-    print("attack object created \n")
+    gremlin_obj.LOGGER.info("attack object created \n")
 
     # container_targets = gremlin_obj.getAllActiveContainers()
     # gremlin_obj.LOGGER.info("retrieved all active containers: {} \n".format(container_targets))
 
     k8s_target = gremlin_obj.getAllAvailableKubernetesTargets()
-    print("retrieved all active kubernetes targets {} \n".format(k8s_target))
+    gremlin_obj.LOGGER.info("retrieved all active kubernetes targets {} \n".format(k8s_target))
 
     # hosts = ["i-0ca726e746c7a0092", "i-0b14d33bee8a136c5", "i-0f80e09df9c560ce1", "i-09401e4b2cec98d8e",
     #          "i-0fe1ec19deb5a4e5a", "i-067318e06abc81cb8"]
@@ -536,10 +546,12 @@ if __name__ == '__main__':
     if k8s_target:
         if k8s_target["DEPLOYMENT"]:
             print("Starting Deployment Attacks \n")
+            gremlin_obj.LOGGER.info("Starting Deployment Attacks \n")
             gremlin_obj.runAllAttacksOnKubernetes(k8s_target["DEPLOYMENT"])
 
     if k8s_target["POD"]:
         print("Starting POD Attacks \n")
+        gremlin_obj.LOGGER.info("Starting POD Attacks \n")
         gremlin_obj.runAllAttacksOnKubernetes(k8s_target["POD"])
 
     #  Running Attacks on HOSTS:
