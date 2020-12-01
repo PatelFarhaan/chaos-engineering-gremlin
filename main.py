@@ -544,15 +544,15 @@ if __name__ == '__main__':
 
     #  Running Attacks on KUBERNETES:
     if k8s_target:
-        if k8s_target["DEPLOYMENT"]:
-            print("Starting Deployment Attacks \n")
-            gremlin_obj.LOGGER.info("Starting Deployment Attacks \n")
-            gremlin_obj.runAllAttacksOnKubernetes(k8s_target["DEPLOYMENT"])
+        # if k8s_target["DEPLOYMENT"]:
+        #     print("Starting Deployment Attacks \n")
+        #     gremlin_obj.LOGGER.info("Starting Deployment Attacks \n")
+        #     gremlin_obj.runAllAttacksOnKubernetes(k8s_target["DEPLOYMENT"])
 
-    if k8s_target["POD"]:
-        print("Starting POD Attacks \n")
-        gremlin_obj.LOGGER.info("Starting POD Attacks \n")
-        gremlin_obj.runAllAttacksOnKubernetes(k8s_target["POD"])
+        if k8s_target["POD"]:
+            print("Starting POD Attacks \n")
+            gremlin_obj.LOGGER.info("Starting POD Attacks \n")
+            gremlin_obj.runAllAttacksOnKubernetes(k8s_target["POD"])
 
     #  Running Attacks on HOSTS:
     # print("Running Host Attacks \n")
