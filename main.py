@@ -104,16 +104,16 @@ class GremlinAttacks(object):
         self.packetLossKillAttackOnContainers(target_name)
 
     def runAllAttacksOnKubernetes(self, target_name):
-        # self.ioAttackOnKubernetes(target_name)
-        # self.cpuAttackOnKubernetes(target_name)
-        # self.diskAttackOnKubernetes(target_name)
-        # self.memoryAttackOnKubernetes(target_name)
-        # self.dnsKillAttackOnKubernetes(target_name)
+        self.ioAttackOnKubernetes(target_name)
+        self.cpuAttackOnKubernetes(target_name)
+        self.diskAttackOnKubernetes(target_name)
+        self.memoryAttackOnKubernetes(target_name)
+        self.dnsKillAttackOnKubernetes(target_name)
         self.processKillAttackOnKubernetes(target_name)
-        # self.latencyKillAttackOnKubernetes(target_name)
-        # self.shutDownKillAttackOnKubernetes(target_name)
-        # self.blackHoleKillAttackOnKubernetes(target_name)
-        # self.packetLossKillAttackOnKubernetes(target_name)
+        self.latencyKillAttackOnKubernetes(target_name)
+        self.shutDownKillAttackOnKubernetes(target_name)
+        self.blackHoleKillAttackOnKubernetes(target_name)
+        self.packetLossKillAttackOnKubernetes(target_name)
 
     def runAllAttacksOnHost(self, target_name):
         self.ioAttackOnHosts(target_name)
