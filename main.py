@@ -343,7 +343,7 @@ class GremlinAttacks(object):
                             self.HOSTS_PAYLOAD["command"]["args"])
 
     def timeTravelKillAttackOnHosts(self, instances):
-        time_travel_in_secs = random.randint(80000, 100000)  # change this to 20 hrs
+        time_travel_in_secs = random.randint(72000, 86400)
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = instances
         self.HOSTS_PAYLOAD["command"] = {
             "type": "time_travel",
