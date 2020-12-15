@@ -253,14 +253,15 @@ class GremlinAttacks(object):
                             cli_args)
 
     def latencyKillAttackOnKubernetes(self, target_object: list):
-        milli_seconds = random.randint(500, 1000)
-        cli_args = ["latency", "-l", "{}".format(self.SECONDS), "-m", "{}".format(milli_seconds), "-h",
-                    "^api.gremlin.com", "-p", "^53"]
-        self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
-        self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
-        self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
-        self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "latency",
-                            cli_args)
+        milli_seconds_list = [random.randint(5000, 6000), random.randint(30000, 40000)]
+        for milli_seconds in milli_seconds_list:
+            cli_args = ["latency", "-l", "{}".format(self.SECONDS), "-m", "{}".format(milli_seconds), "-h",
+                        "^api.gremlin.com", "-p", "^53"]
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["providers"] = []
+            self.KUBERNETES_PAYLOAD["impactDefinition"]["cliArgs"] = cli_args
+            self.KUBERNETES_PAYLOAD["targetDefinition"]["strategy"]["k8sObjects"] = target_object
+            self.postAPIRequest(self.KUBERNETS_URL, self.HEADERS, self.KUBERNETES_PAYLOAD, "kubernetes", "latency",
+                                cli_args)
 
     def dnsKillAttackOnKubernetes(self, target_object: list):
         cli_args = ["dns", "-l", "{}".format(self.SECONDS)]
@@ -342,7 +343,7 @@ class GremlinAttacks(object):
                             self.HOSTS_PAYLOAD["command"]["args"])
 
     def timeTravelKillAttackOnHosts(self, instances):
-        time_travel_in_secs = random.randint(80000, 100000)
+        time_travel_in_secs = random.randint(80000, 100000)  # change this to 20 hrs
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = instances
         self.HOSTS_PAYLOAD["command"] = {
             "type": "time_travel",
@@ -364,17 +365,18 @@ class GremlinAttacks(object):
                             self.HOSTS_PAYLOAD["command"]["args"])
 
     def latencyKillAttackOnHosts(self, instances):
-        milli_seconds = random.randint(500, 1000)
-        self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = instances
-        self.HOSTS_PAYLOAD["command"]["providers"] = []
-        self.HOSTS_PAYLOAD["command"] = {
-            "type": "latency",
-            "commandType": "Latency",
-            "args": ["-l", "{}".format(self.SECONDS), "-m", "{}".format(milli_seconds), "-h", "^api.gremlin.com", "-p",
-                     "^53"]
-        }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "latency",
-                            self.HOSTS_PAYLOAD["command"]["args"])
+        milli_seconds_list = [random.randint(5000, 6000), random.randint(30000, 40000)]
+        for milli_seconds in milli_seconds_list:
+            self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = instances
+            self.HOSTS_PAYLOAD["command"]["providers"] = []
+            self.HOSTS_PAYLOAD["command"] = {
+                "type": "latency",
+                "commandType": "Latency",
+                "args": ["-l", "{}".format(self.SECONDS), "-m", "{}".format(milli_seconds), "-h", "^api.gremlin.com", "-p",
+                         "^53"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.HOSTS_PAYLOAD, "hosts", "latency",
+                                self.HOSTS_PAYLOAD["command"]["args"])
 
     def dnsKillAttackOnHosts(self, instances):
         self.HOSTS_PAYLOAD["target"]["hosts"]["multiSelectTags"]["instance-id"] = instances
@@ -482,18 +484,19 @@ class GremlinAttacks(object):
                             self.CONTAINERS_PAYLOAD["command"]["args"])
 
     def latencyKillAttackOnContainers(self, containers: list):
-        milli_seconds = random.randint(500, 1000)
-        self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
-            "io.kubernetes.container.name"] = containers
-        self.CONTAINERS_PAYLOAD["command"]["providers"] = []
-        self.CONTAINERS_PAYLOAD["command"] = {
-            "type": "latency",
-            "commandType": "Latency",
-            "args": ["-l", "{}".format(self.SECONDS), "-m", "{}".format(milli_seconds), "-h", "^api.gremlin.com", "-p",
-                     "^53"]
-        }
-        self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "latency",
-                            self.CONTAINERS_PAYLOAD["command"]["args"])
+        milli_seconds_list = [random.randint(5000, 6000), random.randint(30000, 40000)]
+        for milli_seconds in milli_seconds_list:
+            self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
+                "io.kubernetes.container.name"] = containers
+            self.CONTAINERS_PAYLOAD["command"]["providers"] = []
+            self.CONTAINERS_PAYLOAD["command"] = {
+                "type": "latency",
+                "commandType": "Latency",
+                "args": ["-l", "{}".format(self.SECONDS), "-m", "{}".format(milli_seconds), "-h", "^api.gremlin.com", "-p",
+                         "^53"]
+            }
+            self.postAPIRequest(self.HOSTS_URL, self.HEADERS, self.CONTAINERS_PAYLOAD, "containers", "latency",
+                                self.CONTAINERS_PAYLOAD["command"]["args"])
 
     def dnsKillAttackOnContainers(self, containers: list):
         self.CONTAINERS_PAYLOAD["target"]["containers"]["multiSelectLabels"][
